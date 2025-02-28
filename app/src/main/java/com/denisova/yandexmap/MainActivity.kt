@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapKitFactory.setLocale("ru_RU")
-        MapKitFactory.setApiKey("ec876c1e-6e31-4149-888f-12a846be411f")
+        MapKitFactory.setApiKey(" ")
         MapKitFactory.initialize(this)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
