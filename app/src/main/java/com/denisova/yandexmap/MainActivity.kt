@@ -1,6 +1,7 @@
 package com.denisova.yandexmap
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.PointF
@@ -70,6 +71,13 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         MapKitFactory.initialize(this)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+        val accountButton: ImageView = findViewById(R.id.accountButton)
+
+        accountButton.setOnClickListener {
+            val intent = Intent(this, AuthActivity::class.java)
+            startActivity(intent)
+        }
+
         mapView = findViewById(R.id.mapview)
         requestLocationPermission()
         val point = Point(57.155461, 65.535104)
