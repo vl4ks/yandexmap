@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">yandexmap</string>
+    <string name="traffic_button_description">Traffic Toggle Button</string>
+</resources>
