@@ -1,7 +1,9 @@
 package com.denisova.yandexmap
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.PointF
@@ -12,6 +14,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.yandex.mapkit.Animation
@@ -52,7 +55,16 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     lateinit var searchManager: SearchManager
     lateinit var locationMapKit: UserLocationLayer
     lateinit var searchSession: Session
+    private lateinit var accountButton: ImageView
+    private lateinit var sharedPref: SharedPreferences
 
+    private val authResultLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            updateAccountButton()
+        }
+    }
 
     private fun sumbitQuery(query:String) {
         val searchOptions = SearchOptions().apply {
@@ -67,15 +79,22 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapKitFactory.setLocale("ru_RU")
-        MapKitFactory.setApiKey(" ")
+        MapKitFactory.setApiKey("")
         MapKitFactory.initialize(this)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        val accountButton: ImageView = findViewById(R.id.accountButton)
+
+        sharedPref = getSharedPreferences("AuthPref", MODE_PRIVATE)
+        accountButton = findViewById(R.id.accountButton)
+        updateAccountButton()
 
         accountButton.setOnClickListener {
-            val intent = Intent(this, AuthActivity::class.java)
-            startActivity(intent)
+            if (isUserLoggedIn()) {
+                showLogoutDialog()
+            } else {
+                val intent = Intent(this, AuthActivity::class.java)
+                authResultLauncher.launch(intent)
+            }
         }
 
         mapView = findViewById(R.id.mapview)
@@ -120,6 +139,40 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
             false
         }
 
+        val homeButton: ImageView = findViewById(R.id.homeButton)
+        homeButton.setOnClickListener {
+            val homePoint = Point(57.155461, 65.535104)
+            mapView.map.move(
+                CameraPosition(homePoint, 11.0f, 0.0f, 0.0f),
+                Animation(Animation.Type.SMOOTH, 1f),
+                null
+            )
+        }
+
+    }
+    private fun isUserLoggedIn(): Boolean {
+        return sharedPref.getBoolean("isLoggedIn", false)
+    }
+
+    private fun updateAccountButton() {
+        if (isUserLoggedIn()) {
+            accountButton.setImageResource(R.drawable.ic_account_circle_filled)
+        } else {
+            accountButton.setImageResource(R.drawable.ic_account_circle)
+        }
+    }
+
+    private fun showLogoutDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Выход")
+            .setMessage("Вы уверены, что хотите выйти?")
+            .setPositiveButton("Да") { _, _ ->
+                AuthActivity.logout(this)
+                updateAccountButton()
+                Toast.makeText(this, "Вы вышли из системы", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 
     private fun requestLocationPermission() {
@@ -169,8 +222,8 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
                 .setRotationType(RotationType.ROTATE).setZIndex(0f).setScale(0.1f)
         )
         picIcon.setIcon("pin", ImageProvider.fromResource(this, R.drawable.nothing),
-        IconStyle().setAnchor(PointF(0.5f, 0.5f)).setRotationType(RotationType.ROTATE)
-            .setZIndex(1f).setScale(0.5f))
+            IconStyle().setAnchor(PointF(0.5f, 0.5f)).setRotationType(RotationType.ROTATE)
+                .setZIndex(1f).setScale(0.5f))
         userLocationView.accuracyCircle.fillColor = Color.BLUE and -0x66000001
     }
 
