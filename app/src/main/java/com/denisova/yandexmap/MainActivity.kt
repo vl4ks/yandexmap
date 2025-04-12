@@ -20,6 +20,15 @@ import androidx.core.app.ActivityCompat
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKit
 import com.yandex.mapkit.MapKitFactory
+import com.yandex.mapkit.RequestPoint
+import com.yandex.mapkit.RequestPointType
+import com.yandex.mapkit.directions.DirectionsFactory
+import com.yandex.mapkit.directions.driving.DrivingOptions
+import com.yandex.mapkit.directions.driving.DrivingRoute
+import com.yandex.mapkit.directions.driving.DrivingRouter
+import com.yandex.mapkit.directions.driving.DrivingRouterType
+import com.yandex.mapkit.directions.driving.DrivingSession
+import com.yandex.mapkit.directions.driving.VehicleOptions
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.layers.ObjectEvent
 import com.yandex.mapkit.map.CameraListener
@@ -46,7 +55,7 @@ import com.yandex.runtime.image.ImageProvider
 import com.yandex.runtime.network.NetworkError
 import com.yandex.runtime.network.RemoteError
 
-class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.SearchListener, CameraListener {
+class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.SearchListener, CameraListener, DrivingSession.DrivingRouteListener {
     lateinit var mapView: MapView
     lateinit var trafficImageView: ImageView
     lateinit var trafficLayer: TrafficLayer
@@ -57,6 +66,16 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     lateinit var searchSession: Session
     private lateinit var accountButton: ImageView
     private lateinit var sharedPref: SharedPreferences
+    private val ROUTE_START_LOCATION = Point(57.159345, 65.522219) //универ5
+    private val ROUTE_END_LOCATION = Point(57.160580, 65.530214) //кафе15/86
+    private val SCREEN_CENTER = Point(
+        (ROUTE_START_LOCATION.latitude+ROUTE_END_LOCATION.latitude)/2,
+        (ROUTE_START_LOCATION.longitude+ROUTE_END_LOCATION.longitude)/2
+    )
+
+    private var mapObjects:MapObjectCollection? = null
+    private var drivingRouter:DrivingRouter? = null
+    private var drivingSession:DrivingSession? = null
 
     private val authResultLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -66,7 +85,7 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         }
     }
 
-    private fun sumbitQuery(query:String) {
+    private fun submitQuery(query:String) {
         val searchOptions = SearchOptions().apply {
             geometry = true
             resultPageSize = 10
@@ -125,7 +144,7 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         }
 
         locationMapKit = mapKit.createUserLocationLayer(mapView.mapWindow)
-        locationMapKit.isVisible = true
+        locationMapKit.isVisible = false
         locationMapKit.setObjectListener(this)
 
         SearchFactory.initialize(this)
@@ -134,7 +153,7 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         searchEdit = findViewById(R.id.search_edit)
         searchEdit.setOnEditorActionListener { v, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                sumbitQuery(searchEdit.text.toString())
+                submitQuery(searchEdit.text.toString())
             }
             false
         }
@@ -149,7 +168,12 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
             )
         }
 
+        drivingRouter = DirectionsFactory.getInstance().createDrivingRouter(DrivingRouterType.COMBINED)
+        mapObjects = mapView.map.mapObjects.addCollection()
+
+        submitRequest()
     }
+
     private fun isUserLoggedIn(): Boolean {
         return sharedPref.getBoolean("isLoggedIn", false)
     }
@@ -241,7 +265,7 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
             val resultLocation = searchResult.obj!!.geometry[0].point!!
             if(response != null) {
                 mapObjects.addPlacemark(resultLocation, ImageProvider.fromResource(this, R.drawable.search_result),
-                    IconStyle().setScale(0.1f))
+                    IconStyle().setScale(0.05f))
             }
         }
     }
@@ -265,7 +289,28 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         finished: Boolean
     ) {
         if (finished) {
-            sumbitQuery(searchEdit.text.toString())
+            submitQuery(searchEdit.text.toString())
         }
+    }
+
+    override fun onDrivingRoutes(p0: MutableList<DrivingRoute>) {
+        for(route in p0){
+            mapObjects!!.addPolyline(route.geometry)
+        }
+    }
+
+    override fun onDrivingRoutesError(p0: Error) {
+        var errorMessage = "Неизвестная ошибка!"
+        Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT)
+    }
+
+    private fun submitRequest() {
+        val drivingOptions = DrivingOptions()
+        val vehicleOptions = VehicleOptions()
+        val requestPoints = listOf(
+            RequestPoint(ROUTE_START_LOCATION, RequestPointType.WAYPOINT, null, null),
+            RequestPoint(ROUTE_END_LOCATION, RequestPointType.WAYPOINT, null, null)
+        )
+        drivingSession = drivingRouter!!.requestRoutes(requestPoints, drivingOptions, vehicleOptions, this)
     }
 }

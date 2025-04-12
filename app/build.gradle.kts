@@ -37,6 +37,8 @@ android {
 
 dependencies {
     implementation("com.yandex.android:maps.mobile:4.5.0-full")
+    implementation("com.google.android.material:material:1.13.0-alpha12")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
