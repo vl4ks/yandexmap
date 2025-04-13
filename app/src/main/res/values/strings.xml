@@ -7,4 +7,5 @@
     <string name="logout_message">Вы уверены, что хотите выйти?</string>
     <string name="logout_positive">Да</string>
     <string name="logout_negative">Отмена</string>
+    <string name="places_button_description">Поиск организаций</string>
 </resources>

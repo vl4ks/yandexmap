@@ -20,15 +20,11 @@ import androidx.core.app.ActivityCompat
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKit
 import com.yandex.mapkit.MapKitFactory
-import com.yandex.mapkit.RequestPoint
-import com.yandex.mapkit.RequestPointType
 import com.yandex.mapkit.directions.DirectionsFactory
-import com.yandex.mapkit.directions.driving.DrivingOptions
 import com.yandex.mapkit.directions.driving.DrivingRoute
 import com.yandex.mapkit.directions.driving.DrivingRouter
 import com.yandex.mapkit.directions.driving.DrivingRouterType
 import com.yandex.mapkit.directions.driving.DrivingSession
-import com.yandex.mapkit.directions.driving.VehicleOptions
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.layers.ObjectEvent
 import com.yandex.mapkit.map.CameraListener
@@ -55,6 +51,7 @@ import com.yandex.runtime.image.ImageProvider
 import com.yandex.runtime.network.NetworkError
 import com.yandex.runtime.network.RemoteError
 
+
 class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.SearchListener, CameraListener, DrivingSession.DrivingRouteListener {
     lateinit var mapView: MapView
     lateinit var trafficImageView: ImageView
@@ -66,16 +63,10 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     lateinit var searchSession: Session
     private lateinit var accountButton: ImageView
     private lateinit var sharedPref: SharedPreferences
-    private val ROUTE_START_LOCATION = Point(57.159345, 65.522219) //универ5
-    private val ROUTE_END_LOCATION = Point(57.160580, 65.530214) //кафе15/86
-    private val SCREEN_CENTER = Point(
-        (ROUTE_START_LOCATION.latitude+ROUTE_END_LOCATION.latitude)/2,
-        (ROUTE_START_LOCATION.longitude+ROUTE_END_LOCATION.longitude)/2
-    )
+    private var placeMarkers: MapObjectCollection? = null
 
     private var mapObjects:MapObjectCollection? = null
     private var drivingRouter:DrivingRouter? = null
-    private var drivingSession:DrivingSession? = null
 
     private val authResultLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -86,10 +77,6 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     }
 
     private fun submitQuery(query:String) {
-        val searchOptions = SearchOptions().apply {
-            geometry = true
-            resultPageSize = 10
-        }
         searchSession = searchManager.submit(query, VisibleRegionUtils.toPolygon(mapView.map.visibleRegion),
             SearchOptions(), this
         )
@@ -117,6 +104,7 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         }
 
         mapView = findViewById(R.id.mapview)
+        mapView.map.mapObjects.clear()
         requestLocationPermission()
         val point = Point(57.155461, 65.535104)
         mapView.map.move(
@@ -171,7 +159,48 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         drivingRouter = DirectionsFactory.getInstance().createDrivingRouter(DrivingRouterType.COMBINED)
         mapObjects = mapView.map.mapObjects.addCollection()
 
-        submitRequest()
+        handlePlaceIntent()
+
+        val placesButton: ImageView = findViewById(R.id.placesButton)
+        placesButton.setOnClickListener {
+            startActivity(Intent(this, PlacesActivity::class.java))
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent?.let {
+            setIntent(it)
+            handlePlaceIntent()
+        }
+    }
+
+    private fun handlePlaceIntent() {
+        intent?.extras?.let { extras ->
+            if (extras.containsKey("PLACE_LAT") && extras.containsKey("PLACE_LON")) {
+                val lat = extras.getDouble("PLACE_LAT")
+                val lon = extras.getDouble("PLACE_LON")
+                val name = extras.getString("PLACE_NAME", "")
+
+                placeMarkers?.clear()
+
+                val point = Point(lat, lon)
+
+                mapView.map.move(
+                    CameraPosition(point, 19.0f, 0.0f, 0.0f),
+                    Animation(Animation.Type.SMOOTH, 0.5f),
+                    null
+                )
+
+                mapView.map.mapObjects.addPlacemark(
+                    point,
+                    ImageProvider.fromResource(this, R.drawable.place_marker),
+                    IconStyle().setScale(0.05f)
+                )
+
+                Toast.makeText(this, name, Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun isUserLoggedIn(): Boolean {
@@ -288,9 +317,9 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         cameraUpdateReason: CameraUpdateReason,
         finished: Boolean
     ) {
-        if (finished) {
-            submitQuery(searchEdit.text.toString())
-        }
+//        if (finished) {
+//            submitQuery(searchEdit.text.toString())
+//        }
     }
 
     override fun onDrivingRoutes(p0: MutableList<DrivingRoute>) {
@@ -302,15 +331,5 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     override fun onDrivingRoutesError(p0: Error) {
         var errorMessage = "Неизвестная ошибка!"
         Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT)
-    }
-
-    private fun submitRequest() {
-        val drivingOptions = DrivingOptions()
-        val vehicleOptions = VehicleOptions()
-        val requestPoints = listOf(
-            RequestPoint(ROUTE_START_LOCATION, RequestPointType.WAYPOINT, null, null),
-            RequestPoint(ROUTE_END_LOCATION, RequestPointType.WAYPOINT, null, null)
-        )
-        drivingSession = drivingRouter!!.requestRoutes(requestPoints, drivingOptions, vehicleOptions, this)
     }
 }
