@@ -38,7 +38,6 @@ class PlacesActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         adapter = PlacesAdapter(emptyList()) { place ->
-            // При клике на место открываем карту с этим местом
             val intent = Intent(this, MainActivity::class.java).apply {
                 putExtra("PLACE_LAT", place.latitude)
                 putExtra("PLACE_LON", place.longitude)

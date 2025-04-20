@@ -18,14 +18,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@android:color/black" />
 
         <TextView
             android:id="@+id/placeAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textColor="?android:attr/textColorSecondary" />
+            android:textColor="@android:color/black" />
 
 <!--        <TextView-->
 <!--            android:id="@+id/placeCategory"-->
