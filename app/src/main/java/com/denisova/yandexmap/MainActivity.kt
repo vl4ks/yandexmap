@@ -17,6 +17,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKit
 import com.yandex.mapkit.MapKitFactory
@@ -52,12 +54,13 @@ import com.yandex.runtime.network.NetworkError
 import com.yandex.runtime.network.RemoteError
 
 
-class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.SearchListener, CameraListener, DrivingSession.DrivingRouteListener {
+class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.SearchListener,
+    CameraListener, DrivingSession.DrivingRouteListener {
     lateinit var mapView: MapView
     lateinit var trafficImageView: ImageView
     lateinit var trafficLayer: TrafficLayer
     var isTrafficEnabled = false
-    lateinit var searchEdit:EditText
+    lateinit var searchEdit: EditText
     lateinit var searchManager: SearchManager
     lateinit var locationMapKit: UserLocationLayer
     lateinit var searchSession: Session
@@ -65,8 +68,11 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     private lateinit var sharedPref: SharedPreferences
     private var placeMarkers: MapObjectCollection? = null
 
-    private var mapObjects:MapObjectCollection? = null
-    private var drivingRouter:DrivingRouter? = null
+    private var mapObjects: MapObjectCollection? = null
+    private var drivingRouter: DrivingRouter? = null
+
+    private lateinit var exportButton: ImageView
+
 
     private val authResultLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -76,8 +82,9 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         }
     }
 
-    private fun submitQuery(query:String) {
-        searchSession = searchManager.submit(query, VisibleRegionUtils.toPolygon(mapView.map.visibleRegion),
+    private fun submitQuery(query: String) {
+        searchSession = searchManager.submit(
+            query, VisibleRegionUtils.toPolygon(mapView.map.visibleRegion),
             SearchOptions(), this
         )
     }
@@ -103,6 +110,10 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
             }
         }
 
+        val statsButton: ImageView = findViewById(R.id.statsButton)
+        statsButton.setOnClickListener {
+            startActivity(Intent(this, StatsActivity::class.java))
+        }
         mapView = findViewById(R.id.mapview)
         mapView.map.mapObjects.clear()
         requestLocationPermission()
@@ -112,7 +123,7 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
             Animation(Animation.Type.SMOOTH, 10f),
             null
         )
-        var mapKit:MapKit = MapKitFactory.getInstance()
+        var mapKit: MapKit = MapKitFactory.getInstance()
         trafficLayer = mapKit.createTrafficLayer(mapView.mapWindow)
 
         trafficImageView = findViewById(R.id.trafficonoff)
@@ -135,7 +146,6 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         locationMapKit.isVisible = false
         locationMapKit.setObjectListener(this)
 
-        SearchFactory.initialize(this)
         searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED)
         mapView.map.addCameraListener(this)
         searchEdit = findViewById(R.id.search_edit)
@@ -156,7 +166,8 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
             )
         }
 
-        drivingRouter = DirectionsFactory.getInstance().createDrivingRouter(DrivingRouterType.COMBINED)
+        drivingRouter =
+            DirectionsFactory.getInstance().createDrivingRouter(DrivingRouterType.COMBINED)
         mapObjects = mapView.map.mapObjects.addCollection()
 
         handlePlaceIntent()
@@ -164,6 +175,11 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         val placesButton: ImageView = findViewById(R.id.placesButton)
         placesButton.setOnClickListener {
             startActivity(Intent(this, PlacesActivity::class.java))
+        }
+
+        exportButton = findViewById(R.id.exportButton)
+        exportButton.setOnClickListener {
+            exportToExcel()
         }
     }
 
@@ -267,16 +283,21 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
             PointF((mapView.width * 0.5).toFloat(), (mapView.height * 0.5).toFloat()),
             PointF((mapView.width * 0.5).toFloat(), (mapView.height * 0.83).toFloat())
         )
-        userLocationView.arrow.setIcon(ImageProvider.fromResource(this, R.drawable.user_arrow),
-            IconStyle().setScale(0.1f))
+        userLocationView.arrow.setIcon(
+            ImageProvider.fromResource(this, R.drawable.user_arrow),
+            IconStyle().setScale(0.1f)
+        )
         val picIcon = userLocationView.pin.useCompositeIcon()
-        picIcon.setIcon("icon", ImageProvider.fromResource(this, R.drawable.search_result),
+        picIcon.setIcon(
+            "icon", ImageProvider.fromResource(this, R.drawable.search_result),
             IconStyle().setAnchor(PointF(0f, 0f))
                 .setRotationType(RotationType.ROTATE).setZIndex(0f).setScale(0.1f)
         )
-        picIcon.setIcon("pin", ImageProvider.fromResource(this, R.drawable.nothing),
+        picIcon.setIcon(
+            "pin", ImageProvider.fromResource(this, R.drawable.nothing),
             IconStyle().setAnchor(PointF(0.5f, 0.5f)).setRotationType(RotationType.ROTATE)
-                .setZIndex(1f).setScale(0.5f))
+                .setZIndex(1f).setScale(0.5f)
+        )
         userLocationView.accuracyCircle.fillColor = Color.BLUE and -0x66000001
     }
 
@@ -288,13 +309,15 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     }
 
     override fun onSearchResponse(response: Response) {
-        val mapObjects:MapObjectCollection = mapView.map.mapObjects
+        val mapObjects: MapObjectCollection = mapView.map.mapObjects
         mapObjects.clear()
         for (searchResult in response.collection.children) {
             val resultLocation = searchResult.obj!!.geometry[0].point!!
-            if(response != null) {
-                mapObjects.addPlacemark(resultLocation, ImageProvider.fromResource(this, R.drawable.search_result),
-                    IconStyle().setScale(0.05f))
+            if (response != null) {
+                mapObjects.addPlacemark(
+                    resultLocation, ImageProvider.fromResource(this, R.drawable.search_result),
+                    IconStyle().setScale(0.05f)
+                )
             }
         }
     }
@@ -303,11 +326,10 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         var errorMessage = "Неизвестная ошибка!"
         if (error is RemoteError) {
             errorMessage = "Беспроводная ошибка!"
-        }
-        else if (error is NetworkError) {
+        } else if (error is NetworkError) {
             errorMessage = "Проблема с интернетом!"
         }
-        Toast.makeText(this,errorMessage, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
 
     }
 
@@ -317,13 +339,10 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
         cameraUpdateReason: CameraUpdateReason,
         finished: Boolean
     ) {
-//        if (finished) {
-//            submitQuery(searchEdit.text.toString())
-//        }
     }
 
     override fun onDrivingRoutes(p0: MutableList<DrivingRoute>) {
-        for(route in p0){
+        for (route in p0) {
             mapObjects!!.addPolyline(route.geometry)
         }
     }
@@ -331,5 +350,59 @@ class MainActivity : AppCompatActivity(), UserLocationObjectListener, Session.Se
     override fun onDrivingRoutesError(p0: Error) {
         var errorMessage = "Неизвестная ошибка!"
         Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT)
+    }
+
+    private fun exportToExcel() {
+        val dbHelper = DbHelper(this, null)
+        val places = dbHelper.getAllPlaces()
+
+        if (places.isEmpty()) {
+            Toast.makeText(this, "Нет данных для экспорта", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val exporter = ExcelExporter(this)
+        val file = exporter.exportPlacesToExcel(places)
+
+        if (file != null) {
+            Toast.makeText(this, "Файл сохранен: ${file.name}", Toast.LENGTH_LONG).show()
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                putExtra(
+                    Intent.EXTRA_STREAM, FileProvider.getUriForFile(
+                        this@MainActivity,
+                        "${packageName}.fileprovider",
+                        file
+                    )
+                )
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(shareIntent, "Поделиться файлом"))
+        } else {
+            Toast.makeText(this, "Ошибка при экспорте", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val storagePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            exportToExcel()
+        } else {
+            Toast.makeText(this, "Для экспорта нужно разрешение", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun checkPermissionsAndExport() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            exportToExcel()
+        } else {
+            storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
     }
 }

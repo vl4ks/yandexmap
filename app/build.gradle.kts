@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.denisova.yandexmap"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -40,9 +40,12 @@ android {
 }
 
 dependencies {
-    implementation("com.yandex.android:maps.mobile:4.5.0-full")
+    implementation("com.yandex.android:maps.mobile:4.14.0-full")
     implementation("com.google.android.material:material:1.13.0-alpha12")
     implementation("androidx.recyclerview:recyclerview:1.4.0")
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("org.apache.poi:poi:5.2.3")
+    implementation("org.apache.poi:poi-ooxml:5.2.3")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

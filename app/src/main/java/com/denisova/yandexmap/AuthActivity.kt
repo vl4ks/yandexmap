@@ -24,7 +24,6 @@ class AuthActivity : AppCompatActivity() {
         val registerButton: Button = findViewById(R.id.registerButton)
         val loginButton: Button = findViewById(R.id.loginButton)
 
-        // Проверка, есть ли сохраненные данные
         if (sharedPref.getBoolean("isLoggedIn", false)) {
             val email = sharedPref.getString("email", "")
             Toast.makeText(this, "Добро пожаловать, $email", Toast.LENGTH_SHORT).show()
@@ -65,6 +64,7 @@ class AuthActivity : AppCompatActivity() {
             apply()
         }
     }
+
     private fun finishWithResult(success: Boolean) {
         val resultIntent = Intent().apply {
             putExtra("AUTH_RESULT", success)

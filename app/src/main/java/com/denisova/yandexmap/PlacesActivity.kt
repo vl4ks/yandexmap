@@ -51,23 +51,6 @@ class PlacesActivity : AppCompatActivity() {
         binding.placesRecyclerView.adapter = adapter
     }
 
-//    private fun setupSearch() {
-//        binding.searchEditText.addTextChangedListener(object : TextWatcher {
-//            override fun afterTextChanged(s: Editable?) {
-//                val query = s.toString()
-//                if (query.length >= 2) {
-//                    val places = dbHelper.searchPlaces(query)
-//                    adapter.updatePlaces(places)
-//                } else {
-//                    adapter.updatePlaces(emptyList())
-//                }
-//            }
-//
-//            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-//            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-//        })
-//    }
-
     private fun setupSearch() {
         binding.searchEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
@@ -97,7 +80,8 @@ class PlacesAdapter(
     private val onItemClick: (Place) -> Unit
 ) : RecyclerView.Adapter<PlacesAdapter.PlaceViewHolder>() {
 
-    inner class PlaceViewHolder(val binding: ItemPlaceBinding) : RecyclerView.ViewHolder(binding.root)
+    inner class PlaceViewHolder(val binding: ItemPlaceBinding) :
+        RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaceViewHolder {
         val binding = ItemPlaceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
