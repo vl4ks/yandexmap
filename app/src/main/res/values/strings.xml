@@ -1,4 +1,12 @@
 <resources>
     <string name="app_name">yandexmap</string>
     <string name="traffic_button_description">Traffic Toggle Button</string>
+    <string name="account_button_description">Кнопка аккаунта</string>
+    <string name="home_button_description">Кнопка возврата домой</string>
+    <string name="logout_button_description">Выход</string>
+    <string name="logout_message">Вы уверены, что хотите выйти?</string>
+    <string name="logout_positive">Да</string>
+    <string name="logout_negative">Отмена</string>
+    <string name="places_button_description">Поиск организаций</string>
+    <string name="stats_button_description">Кнопка статистики</string>
 </resources>
